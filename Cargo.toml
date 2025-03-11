@@ -1,0 +1,10 @@
+[package]
+name = "mandelbrot_lib"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+f256 = "0.6.0"
+malachite = "0.5.1"
+rand = "0.9.0"
+bigdecimal = "0.4.7"
