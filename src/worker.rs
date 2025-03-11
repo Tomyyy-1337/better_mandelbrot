@@ -13,14 +13,14 @@ where
     T: Send + 'static, 
     R: Send + 'static
 {
-    pub fn new(num_threads: usize, worker_function: fn(T) -> R) -> Worker<T, R> {
+    pub fn new(num_worker_threads: usize, worker_function: fn(T) -> R) -> Worker<T, R> {
         let (result_sender, result_receiver) = std::sync::mpsc::channel();
         let (task_sender, task_receiver) = std::sync::mpsc::channel();
         let task_queue = Arc::new(TaskQueue::new());
 
         Self::spawn_queue_buffer_thread(task_queue.clone(), task_receiver);
         
-        for _ in 0..num_threads {
+        for _ in 0..num_worker_threads {
             Self::spawn_worker_thread(worker_function, result_sender.clone(), task_queue.clone());
         }
 
@@ -66,10 +66,13 @@ where
         }
     }
 
+    /// Clear the task queue. Task that are currently being processed will not be interrupted.
     pub fn clear_queue(&self) {
         self.task_queue.clear_queue();
     }
 
+    /// Write available results into the buffer and return the number of results written.
+    /// If the buffer is too small to hold all available results, the remaining results will be left in the queue.
     pub fn recieve_results_in_buffer(&self, buffer: &mut [R]) -> usize {
         let mut indx = 0;
         while indx < buffer.len() {
@@ -84,6 +87,7 @@ where
         indx
     }
 
+    // Recieve all available results and return them in a vector.
     pub fn receive_results(&self) -> Vec<R> {
         let mut results = Vec::new();
         while let Ok(result) = self.result_receiver.try_recv() {

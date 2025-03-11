@@ -18,14 +18,14 @@ fn main() {
     let long_running_tasks = (0..48).map(|_| random_range(40..=50));
     worker.add_tasks(long_running_tasks);
 
-    let mut results = vec![0; 200];
+    let mut results = [0; 200];
     let mut len;
 
     loop {
         println!("\n====================================================================");
         println!("Current queue size: {}", worker.current_queue_size());
         println!("====================================================================");
-        sleep(Duration::from_millis(750));
+        sleep(Duration::from_millis(600));
 
         let start_read_time = std::time::Instant::now();
         // let results = worker.receive_results();
