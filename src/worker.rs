@@ -40,7 +40,7 @@ where
         }
     }
 
-    pub fn terminate_workers(self) {
+    pub fn terminate(self) {
         self.clear_queue();
 
         for _ in 0..self.worker_threads.len() {

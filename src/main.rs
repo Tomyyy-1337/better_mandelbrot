@@ -48,6 +48,6 @@ fn main() {
     println!("Time taken: {:?}", start.elapsed());
 
     let start_terminate = std::time::Instant::now();
-    worker.terminate_workers();
+    worker.terminate();
     println!("Time taken to terminate: {:?}", start_terminate.elapsed());
 }
