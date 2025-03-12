@@ -20,6 +20,7 @@ where
     T: Send + 'static, 
     R: Send + 'static
 {
+    /// Create a new worker with a given number of worker threads and a worker function and start the worker threads.
     pub fn new(num_worker_threads: usize, worker_function: fn(T) -> R) -> Worker<T, R> {
         let (result_sender, result_receiver) = std::sync::mpsc::channel();
         let (task_sender, task_receiver) = std::sync::mpsc::channel();
@@ -40,6 +41,7 @@ where
         }
     }
 
+    /// Terminate all threads and drop the worker. Blocks until all threads have terminated.
     pub fn terminate(self) {
         self.clear_queue();
 
@@ -118,6 +120,7 @@ where
         indx
     }
 
+    // Wait for the next result and return it. Blocks until a result is available.
     pub fn wait_for_result(&self) -> R {
         self.result_receiver.recv().unwrap()
     }
