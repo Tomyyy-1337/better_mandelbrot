@@ -33,17 +33,10 @@ where
         let task_queue = Arc::new(TaskQueue::new());
 
         for _ in 0..num_worker_threads.max(1) {
-            Self::spawn_worker_thread(
-                worker_function,
-                result_sender.clone(),
-                task_queue.clone(),
-            );
+            Self::spawn_worker_thread(worker_function, result_sender.clone(), task_queue.clone());
         }
 
-        Self::spawn_queue_buffer_thread(
-            task_queue.clone(),
-            task_receiver,
-        );
+        Self::spawn_queue_buffer_thread(task_queue.clone(), task_receiver);
 
         Worker {
             task_queue,

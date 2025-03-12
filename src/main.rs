@@ -20,10 +20,10 @@ fn main() {
     let num_tasks = width_in_chunks * height_in_chunks;
 
     let worker = Worker::new(
-        available_threads - 2, 
+        available_threads, 
         calc_chunk_f256
     );
-    
+
     let start = std::time::Instant::now();
     println!("Starting {} tasks...", num_tasks);
     for x in 0..width_in_chunks {
