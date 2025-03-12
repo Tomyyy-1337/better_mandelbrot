@@ -56,6 +56,55 @@ where
         self.buffer_thread.join().unwrap();
     }
 
+    pub fn add_task(&self, task: T) {
+        self.task_sender.send(Work::Task(task)).unwrap();
+    }
+
+    pub fn add_tasks(&self, tasks: impl IntoIterator<Item = T>) {
+        for task in tasks {
+            self.task_sender.send(Work::Task(task)).unwrap();
+        }
+    }
+
+    /// Clear the task queue. Task that are currently being processed will not be interrupted.
+    pub fn clear_queue(&self) {
+        self.task_queue.clear_queue();
+    }
+
+    /// Write available results into the buffer and return the number of results written.
+    /// If the buffer is too small to hold all available results, the remaining results will be left in the queue.
+    pub fn receive_results_in_buffer(&self, buffer: &mut [R]) -> usize {
+        let mut indx = 0;
+        while indx < buffer.len() {
+            match self.result_receiver.try_recv() {
+                Ok(result) => {
+                    buffer[indx] = result;
+                    indx += 1;
+                }
+                Err(_) => break,
+            }
+        }
+        indx
+    }
+
+    // Wait for the next result and return it. Blocks until a result is available.
+    pub fn wait_for_result(&self) -> R {
+        self.result_receiver.recv().unwrap()
+    }
+
+    // Receive all available results and return them in a vector.
+    pub fn receive_all_results(&self) -> Vec<R> {
+        let mut results = Vec::new();
+        while let Ok(result) = self.result_receiver.try_recv() {
+            results.push(result);
+        }
+        results
+    }
+
+    pub fn current_queue_size(&self) -> usize {
+        self.task_queue.len()
+    }
+
     fn spawn_worker_thread(
         worker_function: fn(T) -> R,
         result_sender: Sender<R>,
@@ -87,55 +136,6 @@ where
                 }
             }
         })
-    }
-
-    pub fn add_task(&self, task: T) {
-        self.task_sender.send(Work::Task(task)).unwrap();
-    }
-
-    pub fn add_tasks(&self, tasks: impl IntoIterator<Item = T>) {
-        for task in tasks {
-            self.task_sender.send(Work::Task(task)).unwrap();
-        }
-    }
-
-    /// Clear the task queue. Task that are currently being processed will not be interrupted.
-    pub fn clear_queue(&self) {
-        self.task_queue.clear_queue();
-    }
-
-    /// Write available results into the buffer and return the number of results written.
-    /// If the buffer is too small to hold all available results, the remaining results will be left in the queue.
-    pub fn recieve_results_in_buffer(&self, buffer: &mut [R]) -> usize {
-        let mut indx = 0;
-        while indx < buffer.len() {
-            match self.result_receiver.try_recv() {
-                Ok(result) => {
-                    buffer[indx] = result;
-                    indx += 1;
-                }
-                Err(_) => break,
-            }
-        }
-        indx
-    }
-
-    // Wait for the next result and return it. Blocks until a result is available.
-    pub fn wait_for_result(&self) -> R {
-        self.result_receiver.recv().unwrap()
-    }
-
-    // Recieve all available results and return them in a vector.
-    pub fn receive_results(&self) -> Vec<R> {
-        let mut results = Vec::new();
-        while let Ok(result) = self.result_receiver.try_recv() {
-            results.push(result);
-        }
-        results
-    }
-
-    pub fn current_queue_size(&self) -> usize {
-        self.task_queue.len()
     }
 }
 
