@@ -87,12 +87,12 @@ where
         indx
     }
 
-    // Wait for the next result and return it. Blocks until a result is available.
+    /// Wait for the next result and return it. Blocks until a result is available.
     pub fn wait_for_result(&self) -> R {
         self.result_receiver.recv().unwrap()
     }
 
-    // Receive all available results and return them in a vector.
+    /// Receive all available results and return them in a vector.
     pub fn receive_all_results(&self) -> Vec<R> {
         let mut results = Vec::new();
         while let Ok(result) = self.result_receiver.try_recv() {
