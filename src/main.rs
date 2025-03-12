@@ -20,27 +20,30 @@ fn main() {
     let num_tasks = width_in_chunks * height_in_chunks;
 
     let worker = Worker::new(
-        available_threads, 
+        available_threads - 2, 
         calc_chunk_f256
     );
 
-    let start = std::time::Instant::now();
     println!("Starting {} tasks...", num_tasks);
-    for x in 0..width_in_chunks {
-        for y in 0..height_in_chunks {
+    let start = std::time::Instant::now();
+
+    let new_tiles = (0..width_in_chunks)
+        .flat_map(|x| (0..height_in_chunks).map(move |y| (x, y)))
+        .map(|(x, y)| {
             let x = f256::from(-2) + f256::from(x) * chunk_size;
             let y = f256::from(-2) + f256::from(y) * chunk_size;
-            worker.add_task(F256Task {
+            F256Task {
                 x,
                 y,
                 chunk_size,
                 resolution: chunk_resolution,
                 max_iter: 200,
-            });
-        }
-    }
+            }
+        });
 
-    println!("Waiting for results...");
+    worker.add_tasks(new_tiles);
+
+    println!("Dsipatching tasks took: {:?}", start.elapsed());
 
     let mut results = 0;
     while results < num_tasks {

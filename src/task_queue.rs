@@ -1,7 +1,5 @@
-use std::{
-    collections::VecDeque,
-    sync::{Condvar, Mutex},
-};
+use std::collections::VecDeque;
+use parking_lot::{Condvar, Mutex};
 
 pub struct TaskQueue<T> {
     tasks: Mutex<VecDeque<T>>,
@@ -10,11 +8,11 @@ pub struct TaskQueue<T> {
 
 impl<T> TaskQueue<T> {
     pub fn len(&self) -> usize {
-        self.tasks.lock().unwrap().len()
+        self.tasks.lock().len()
     }
 
     pub fn clear_queue(&self) {
-        let mut tasks = self.tasks.lock().unwrap();
+        let mut tasks = self.tasks.lock();
         tasks.clear();
     }
 
@@ -26,15 +24,23 @@ impl<T> TaskQueue<T> {
     }
 
     pub fn push(&self, task: T) {
-        let mut tasks = self.tasks.lock().unwrap();
+        let mut tasks = self.tasks.lock();
         tasks.push_back(task);
         self.condvar.notify_one();
     }
 
+    pub fn push_bulk(&self, new_tasks: impl IntoIterator<Item = T>) {
+        let mut tasks = self.tasks.lock();
+        for task in new_tasks {
+            tasks.push_back(task);
+            self.condvar.notify_one();
+        }
+    }
+
     pub fn wait_for_task(&self) -> T {
-        let mut tasks = self.tasks.lock().unwrap();
+        let mut tasks = self.tasks.lock();
         while tasks.is_empty() {
-            tasks = self.condvar.wait(tasks).unwrap();
+            self.condvar.wait(&mut tasks);
         }
         tasks.pop_front().unwrap()
     }

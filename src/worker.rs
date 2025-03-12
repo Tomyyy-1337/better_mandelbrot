@@ -1,6 +1,5 @@
 use std::sync::{
-    Arc,
-    mpsc::{Receiver, Sender},
+    mpsc::{Receiver, Sender}, Arc,
 };
 
 use crate::task_queue::TaskQueue;
@@ -17,7 +16,6 @@ where
 {
     task_queue: Arc<TaskQueue<Work<T>>>,
     result_receiver: Receiver<R>,
-    task_sender: Sender<Work<T>>,
     num_worker_threads: usize,
 }
 
@@ -30,19 +28,15 @@ where
     /// Spawns worker threads that will process tasks from the queue using the worker function.
     pub fn new(num_worker_threads: usize, worker_function: fn(T) -> R) -> Worker<T, R> {
         let (result_sender, result_receiver) = std::sync::mpsc::channel();
-        let (task_sender, task_receiver) = std::sync::mpsc::channel();
         let task_queue = Arc::new(TaskQueue::new());
 
         for _ in 0..num_worker_threads.max(1) {
             Self::spawn_worker_thread(worker_function, result_sender.clone(), task_queue.clone());
         }
 
-        Self::spawn_queue_buffer_thread(task_queue.clone(), task_receiver);
-
         Worker {
             task_queue,
             result_receiver,
-            task_sender,
             num_worker_threads,
         }
     }
@@ -54,14 +48,12 @@ where
 
     /// Add a task to the end of the queue.
     pub fn add_task(&self, task: T) {
-        self.task_sender.send(Work::Task(task)).unwrap();
+        self.task_queue.push(Work::Task(task));
     }
 
     /// Add multiple tasks to the end of the queue.
     pub fn add_tasks(&self, tasks: impl IntoIterator<Item = T>) {
-        for task in tasks {
-            self.task_sender.send(Work::Task(task)).unwrap();
-        }
+        self.task_queue.push_bulk(tasks.into_iter().map(Work::Task));
     }
 
     /// Wait for the next result and return it. Blocks until a result is available.
@@ -116,20 +108,6 @@ where
             }
         })
     }
-
-    fn spawn_queue_buffer_thread(
-        task_queue: Arc<TaskQueue<Work<T>>>,
-        task_receiver: Receiver<Work<T>>,
-    ) -> std::thread::JoinHandle<()> {
-        std::thread::spawn(move || {
-            for task in task_receiver.iter() {
-                match task {
-                    Work::Terminate => break,
-                    Work::Task(_) => task_queue.push(task),
-                }
-            }
-        })
-    }
 }
 
 impl<T, R> Drop for Worker<T, R>
@@ -144,6 +122,5 @@ where
         for _ in 0..self.num_worker_threads {
             self.task_queue.push(Work::Terminate);
         }
-        self.task_sender.send(Work::Terminate).unwrap();
     }
 }
