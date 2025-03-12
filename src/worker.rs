@@ -57,10 +57,12 @@ where
         self.task_queue.clear_queue();
     }
 
+    /// Add a task to the end of the queue.
     pub fn add_task(&self, task: T) {
         self.task_sender.send(Work::Task(task)).unwrap();
     }
-
+    
+    /// Add multiple tasks to the end of the queue.
     pub fn add_tasks(&self, tasks: impl IntoIterator<Item = T>) {
         for task in tasks {
             self.task_sender.send(Work::Task(task)).unwrap();
