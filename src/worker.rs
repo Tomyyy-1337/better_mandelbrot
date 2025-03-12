@@ -26,7 +26,8 @@ where
     T: Send + 'static,
     R: Send + 'static,
 {
-    /// Create a new worker with a given number of worker threads and a worker function and start the worker threads.
+    /// Create a new worker with a given number of worker threads and a worker function.
+    /// Spawns worker threads that will process tasks from the queue using the worker function.
     pub fn new(num_worker_threads: usize, worker_function: fn(T) -> R) -> Worker<T, R> {
         let (result_sender, result_receiver) = std::sync::mpsc::channel();
         let (task_sender, task_receiver) = std::sync::mpsc::channel();
