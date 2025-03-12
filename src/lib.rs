@@ -1,5 +1,8 @@
 mod complex;
-mod worker;
+
 mod task_queue;
 
+pub mod mandelbrot;
+
+mod worker;
 pub use crate::worker::Worker;

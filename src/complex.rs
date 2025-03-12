@@ -1,82 +1,33 @@
-use malachite::{base::num::basic::traits::Zero, rational::Rational};
-use bigdecimal::{BigDecimal, FromPrimitive};
+use f256::f256;
 
-#[derive(Clone)]
-pub struct ComplexMalachite {
-    a: Rational,
-    b: Rational,
+pub struct ComplexF256 {
+    a: f256,
+    b: f256,
 }
 
-impl ComplexMalachite {
-    pub fn new(x: Rational, y: Rational) -> ComplexMalachite {
-        ComplexMalachite { a: x, b: y }
+impl ComplexF256 {
+    pub fn new(x: f256, y: f256) -> ComplexF256 {
+        ComplexF256 { a: x, b: y }
     }
 
-    pub fn zero() -> ComplexMalachite {
-        ComplexMalachite { a: Rational::ZERO, b: Rational::ZERO }
+    pub fn zero() -> ComplexF256 {
+        ComplexF256 { a: f256::from(0), b: f256::from(0) }
     }
 
     pub fn square(&mut self) {
-        let a = &self.a;
-        let a_squared = a * a;
-        let b = &self.b;
-        let b_squared = b * b;
-        let a_b = &(a * b);
+        let a_squared = self.a * self.a;
+        let b_squared = self.b * self.b;
+        let a_b = self.a * self.b;
 
         self.a = a_squared - b_squared;
         self.b = a_b + a_b;
     }
 
-    pub fn norm(&self) -> Rational {
-        let a = &self.a;
-        let a_squared = a * a;
-        let b = &self.b;
-        let b_squared = b * b;
-
-        a_squared + b_squared
+    pub fn norm(&self) -> f256 {
+        self.a * self.a + self.b * self.b
     }
 
-    pub fn add(&mut self, other: &ComplexMalachite) {
-        self.a += &other.a;
-        self.b += &other.b;
-    }
-}
-
-pub struct ComplexBigDecimal {
-    a: BigDecimal,
-    b: BigDecimal,
-}
-
-impl ComplexBigDecimal {
-    pub fn new(x: BigDecimal, y: BigDecimal) -> ComplexBigDecimal {
-        ComplexBigDecimal { a: x, b: y }
-    }
-
-    pub fn zero() -> ComplexBigDecimal {
-        ComplexBigDecimal { a: BigDecimal::from_i32(0).unwrap(), b: BigDecimal::from_i32(0).unwrap() }
-    }
-
-    pub fn square(&mut self) {
-        let a = &self.a;
-        let a_squared = a * a;
-        let b = &self.b;
-        let b_squared = b * b;
-        let a_b = &(a * b);
-
-        self.a = a_squared - b_squared;
-        self.b = a_b + a_b;
-    }
-
-    pub fn norm(&self) -> BigDecimal {
-        let a = &self.a;
-        let a_squared = a * a;
-        let b = &self.b;
-        let b_squared = b * b;
-
-        a_squared + b_squared
-    }
-
-    pub fn add(&mut self, other: &ComplexBigDecimal) {
+    pub fn add(&mut self, other: &ComplexF256) {
         self.a += &other.a;
         self.b += &other.b;
     }
