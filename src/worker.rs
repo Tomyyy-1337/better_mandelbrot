@@ -97,8 +97,7 @@ where
     ) -> std::thread::JoinHandle<()> {
         std::thread::spawn(move || {
             loop {
-                let task = task_queue.wait_for_task();
-                match task {
+                match task_queue.wait_for_task() {
                     Work::Terminate => break,
                     Work::Task(task) => {
                         let result = worker_function(task);
