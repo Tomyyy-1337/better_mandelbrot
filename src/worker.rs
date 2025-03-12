@@ -1,4 +1,7 @@
-use std::sync::{mpsc::{Receiver, Sender}, Arc};
+use std::sync::{
+    Arc,
+    mpsc::{Receiver, Sender},
+};
 
 use crate::task_queue::TaskQueue;
 
@@ -7,18 +10,21 @@ enum Work<T> {
     Terminate,
 }
 
-pub struct Worker<T, R> {
+pub struct Worker<T, R> 
+where
+    T: Send + 'static,
+    R: Send + 'static 
+{
     task_queue: Arc<TaskQueue<Work<T>>>,
     result_receiver: Receiver<R>,
     task_sender: Sender<Work<T>>,
-    worker_threads: Vec<std::thread::JoinHandle<()>>,
-    buffer_thread: std::thread::JoinHandle<()>,
-}
+    num_worker_threads: usize,
+} 
 
-impl<T, R> Worker<T, R> 
-where 
-    T: Send + 'static, 
-    R: Send + 'static
+impl<T, R> Worker<T, R>
+where
+    T: Send + 'static,
+    R: Send + 'static,
 {
     /// Create a new worker with a given number of worker threads and a worker function and start the worker threads.
     pub fn new(num_worker_threads: usize, worker_function: fn(T) -> R) -> Worker<T, R> {
@@ -26,34 +32,24 @@ where
         let (task_sender, task_receiver) = std::sync::mpsc::channel();
         let task_queue = Arc::new(TaskQueue::new());
 
-        let buffer_thread = Self::spawn_queue_buffer_thread(task_queue.clone(), task_receiver);
-        
-        let worker_threads = (0..num_worker_threads.max(1))
-            .map( |_| Self::spawn_worker_thread(worker_function, result_sender.clone(), task_queue.clone()))
+        let mut worker_threads: Vec<std::thread::JoinHandle<()>> = (0..num_worker_threads.max(1))
+            .map(|_| {
+                Self::spawn_worker_thread(
+                    worker_function,
+                    result_sender.clone(),
+                    task_queue.clone(),
+                )
+            })
             .collect();
+
+        worker_threads.push(Self::spawn_queue_buffer_thread(task_queue.clone(), task_receiver));
 
         Worker {
             task_queue,
             result_receiver,
             task_sender,
-            worker_threads,
-            buffer_thread,
+            num_worker_threads,
         }
-    }
-
-    /// Terminate all threads and drop the worker. Blocks until all threads have terminated.
-    pub fn terminate(self) {
-        self.clear_queue();
-
-        for _ in 0..self.worker_threads.len() {
-            self.task_queue.push(Work::Terminate);
-        }   
-        self.task_sender.send(Work::Terminate).unwrap();
-
-        for thread in self.worker_threads {
-            thread.join().unwrap();
-        }
-        self.buffer_thread.join().unwrap();
     }
 
     pub fn add_task(&self, task: T) {
@@ -108,7 +104,7 @@ where
     fn spawn_worker_thread(
         worker_function: fn(T) -> R,
         result_sender: Sender<R>,
-        task_queue: Arc<TaskQueue<Work<T>>>
+        task_queue: Arc<TaskQueue<Work<T>>>,
     ) -> std::thread::JoinHandle<()> {
         std::thread::spawn(move || {
             loop {
@@ -126,7 +122,7 @@ where
 
     fn spawn_queue_buffer_thread(
         task_queue: Arc<TaskQueue<Work<T>>>,
-        task_receiver: Receiver<Work<T>>
+        task_receiver: Receiver<Work<T>>,
     ) -> std::thread::JoinHandle<()> {
         std::thread::spawn(move || {
             for task in task_receiver.iter() {
@@ -139,3 +135,18 @@ where
     }
 }
 
+impl<T, R> Drop for Worker<T, R>
+where
+    T: Send + 'static,
+    R: Send + 'static,
+{
+    /// Drop the worker and terminate all worker threads.
+    fn drop(&mut self) {
+        self.clear_queue();
+
+        for _ in 0..self.num_worker_threads {
+            self.task_queue.push(Work::Terminate);
+        }
+        self.task_sender.send(Work::Terminate).unwrap();
+    }
+}

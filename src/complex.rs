@@ -11,7 +11,10 @@ impl ComplexF256 {
     }
 
     pub fn zero() -> ComplexF256 {
-        ComplexF256 { a: f256::from(0), b: f256::from(0) }
+        ComplexF256 {
+            a: f256::from(0),
+            b: f256::from(0),
+        }
     }
 
     pub fn square(&mut self) {

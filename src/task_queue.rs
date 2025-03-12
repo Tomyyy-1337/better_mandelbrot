@@ -1,4 +1,7 @@
-use std::{collections::VecDeque, sync::{Condvar, Mutex}};
+use std::{
+    collections::VecDeque,
+    sync::{Condvar, Mutex},
+};
 
 pub struct TaskQueue<T> {
     tasks: Mutex<VecDeque<T>>,
@@ -54,16 +57,16 @@ mod tests {
         assert_eq!(task_queue.wait_for_task(), 1);
         assert_eq!(task_queue.len(), 1);
         assert_eq!(task_queue.wait_for_task(), 2);
-        assert_eq!(task_queue.len(), 0);      
-        
+        assert_eq!(task_queue.len(), 0);
+
         let task_queue_clone = task_queue.clone();
         let t = std::thread::spawn(move || {
-            task_queue_clone.wait_for_task();  
+            task_queue_clone.wait_for_task();
         });
-        
+
         sleep(Duration::from_millis(500));
         assert!(!t.is_finished());
-        
+
         task_queue.push(1);
         assert!(t.join().is_ok());
     }

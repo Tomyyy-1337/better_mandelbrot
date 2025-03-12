@@ -1,12 +1,16 @@
 use std::thread::available_parallelism;
 
 use f256::f256;
-use mandelbrot_lib::{mandelbrot::{calc_chunk_f256, F256Task}, Worker};
-
+use mandelbrot_lib::{
+    Worker,
+    mandelbrot::{F256Task, calc_chunk_f256},
+};
 
 fn main() {
+
+
     let available_threads = available_parallelism().unwrap().get();
-    
+
     let width = 3440;
     let height = 1440;
     let chunk_resolution = 64;
@@ -16,11 +20,8 @@ fn main() {
     let chunk_size = f256::from(4) / f256::from(width_in_chunks);
 
     let num_tasks = width_in_chunks * height_in_chunks;
-    
-    let worker = Worker::new(
-        available_threads - 2,
-        calc_chunk_f256,    
-    );
+
+    let worker = Worker::new(available_threads - 2, calc_chunk_f256);
 
     let start = std::time::Instant::now();
     println!("Starting {} tasks...", num_tasks);
@@ -33,7 +34,7 @@ fn main() {
                 y,
                 chunk_size,
                 resolution: chunk_resolution,
-                max_iter: 100,
+                max_iter: 200,
             });
         }
     }
@@ -46,8 +47,4 @@ fn main() {
         results += 1;
     }
     println!("Time taken: {:?}", start.elapsed());
-
-    let start_terminate = std::time::Instant::now();
-    worker.terminate();
-    println!("Time taken to terminate: {:?}", start_terminate.elapsed());
 }

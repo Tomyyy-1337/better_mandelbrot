@@ -1,5 +1,5 @@
-use f256::f256;
 use crate::complex::ComplexF256;
+use f256::f256;
 
 fn calc_mandelbrot_f256(a: f256, b: f256, max_iter: u64) -> u64 {
     let mut z = ComplexF256::new(f256::from(0), f256::from(0));
@@ -21,9 +21,7 @@ pub struct F256Task {
     pub max_iter: u64,
 }
 
-pub fn calc_chunk_f256(
-    task: F256Task,
-) -> Vec<u64> {
+pub fn calc_chunk_f256(task: F256Task) -> Vec<u64> {
     let mut results = Vec::new();
     let step_size = task.chunk_size / f256::from(task.resolution);
     for i in 0..task.resolution {
