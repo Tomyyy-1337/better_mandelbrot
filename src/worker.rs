@@ -10,7 +10,7 @@ enum Work<T> {
     Terminate,
 }
 
-pub struct Worker<T, R> 
+pub struct Worker<T, R>
 where
     T: Send + 'static,
     R: Send + 'static,
@@ -19,7 +19,7 @@ where
     result_receiver: Receiver<R>,
     task_sender: Sender<Work<T>>,
     num_worker_threads: usize,
-} 
+}
 
 impl<T, R> Worker<T, R>
 where
@@ -32,17 +32,18 @@ where
         let (task_sender, task_receiver) = std::sync::mpsc::channel();
         let task_queue = Arc::new(TaskQueue::new());
 
-        let mut worker_threads: Vec<std::thread::JoinHandle<()>> = (0..num_worker_threads.max(1))
-            .map(|_| {
-                Self::spawn_worker_thread(
-                    worker_function,
-                    result_sender.clone(),
-                    task_queue.clone(),
-                )
-            })
-            .collect();
+        for _ in 0..num_worker_threads.max(1) {
+            Self::spawn_worker_thread(
+                worker_function,
+                result_sender.clone(),
+                task_queue.clone(),
+            );
+        }
 
-        worker_threads.push(Self::spawn_queue_buffer_thread(task_queue.clone(), task_receiver));
+        Self::spawn_queue_buffer_thread(
+            task_queue.clone(),
+            task_receiver,
+        );
 
         Worker {
             task_queue,
@@ -61,7 +62,7 @@ where
     pub fn add_task(&self, task: T) {
         self.task_sender.send(Work::Task(task)).unwrap();
     }
-    
+
     /// Add multiple tasks to the end of the queue.
     pub fn add_tasks(&self, tasks: impl IntoIterator<Item = T>) {
         for task in tasks {
@@ -73,7 +74,7 @@ where
     pub fn wait_for_result(&self) -> R {
         self.result_receiver.recv().unwrap()
     }
-    
+
     /// Receive all available results and return them in a vector.
     pub fn receive_all_results(&self) -> Vec<R> {
         let mut results = Vec::new();
@@ -82,8 +83,7 @@ where
         }
         results
     }
-    
-        
+
     /// Write available results into the buffer and return the number of results written.
     /// If the buffer is too small to hold all available results, the remaining results will be left in the queue.
     pub fn receive_results_in_buffer(&self, buffer: &mut [R]) -> usize {
@@ -99,7 +99,6 @@ where
         }
         indx
     }
-
 
     pub fn current_queue_size(&self) -> usize {
         self.task_queue.len()
@@ -139,7 +138,7 @@ where
     }
 }
 
-impl<T, R> Drop for Worker<T, R> 
+impl<T, R> Drop for Worker<T, R>
 where
     T: Send + 'static,
     R: Send + 'static,

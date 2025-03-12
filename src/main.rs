@@ -7,22 +7,23 @@ use mandelbrot_lib::{
 };
 
 fn main() {
-
-
     let available_threads = available_parallelism().unwrap().get();
 
     let width = 3440;
     let height = 1440;
     let chunk_resolution = 64;
 
-    let width_in_chunks = width / chunk_resolution;
-    let height_in_chunks = height / chunk_resolution;
+    let width_in_chunks = width / chunk_resolution + 1;
+    let height_in_chunks = height / chunk_resolution + 1;
     let chunk_size = f256::from(4) / f256::from(width_in_chunks);
 
     let num_tasks = width_in_chunks * height_in_chunks;
 
-    let worker = Worker::new(available_threads - 2, calc_chunk_f256);
-
+    let worker = Worker::new(
+        available_threads - 2, 
+        calc_chunk_f256
+    );
+    
     let start = std::time::Instant::now();
     println!("Starting {} tasks...", num_tasks);
     for x in 0..width_in_chunks {
