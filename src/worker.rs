@@ -13,7 +13,7 @@ enum Work<T> {
 pub struct Worker<T, R> 
 where
     T: Send + 'static,
-    R: Send + 'static 
+    R: Send + 'static,
 {
     task_queue: Arc<TaskQueue<Work<T>>>,
     result_receiver: Receiver<R>,
@@ -52,6 +52,11 @@ where
         }
     }
 
+    /// Clear the task queue. Task that are currently being processed will not be interrupted.
+    pub fn clear_queue(&self) {
+        self.task_queue.clear_queue();
+    }
+
     pub fn add_task(&self, task: T) {
         self.task_sender.send(Work::Task(task)).unwrap();
     }
@@ -62,11 +67,21 @@ where
         }
     }
 
-    /// Clear the task queue. Task that are currently being processed will not be interrupted.
-    pub fn clear_queue(&self) {
-        self.task_queue.clear_queue();
+    /// Wait for the next result and return it. Blocks until a result is available.
+    pub fn wait_for_result(&self) -> R {
+        self.result_receiver.recv().unwrap()
     }
-
+    
+    /// Receive all available results and return them in a vector.
+    pub fn receive_all_results(&self) -> Vec<R> {
+        let mut results = Vec::new();
+        while let Ok(result) = self.result_receiver.try_recv() {
+            results.push(result);
+        }
+        results
+    }
+    
+        
     /// Write available results into the buffer and return the number of results written.
     /// If the buffer is too small to hold all available results, the remaining results will be left in the queue.
     pub fn receive_results_in_buffer(&self, buffer: &mut [R]) -> usize {
@@ -83,19 +98,6 @@ where
         indx
     }
 
-    /// Wait for the next result and return it. Blocks until a result is available.
-    pub fn wait_for_result(&self) -> R {
-        self.result_receiver.recv().unwrap()
-    }
-
-    /// Receive all available results and return them in a vector.
-    pub fn receive_all_results(&self) -> Vec<R> {
-        let mut results = Vec::new();
-        while let Ok(result) = self.result_receiver.try_recv() {
-            results.push(result);
-        }
-        results
-    }
 
     pub fn current_queue_size(&self) -> usize {
         self.task_queue.len()
@@ -135,7 +137,7 @@ where
     }
 }
 
-impl<T, R> Drop for Worker<T, R>
+impl<T, R> Drop for Worker<T, R> 
 where
     T: Send + 'static,
     R: Send + 'static,

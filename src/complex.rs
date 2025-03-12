@@ -10,13 +10,6 @@ impl ComplexF256 {
         ComplexF256 { a: x, b: y }
     }
 
-    pub fn zero() -> ComplexF256 {
-        ComplexF256 {
-            a: f256::from(0),
-            b: f256::from(0),
-        }
-    }
-
     pub fn square(&mut self) {
         let a_squared = self.a * self.a;
         let b_squared = self.b * self.b;
