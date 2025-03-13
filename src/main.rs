@@ -1,4 +1,4 @@
-use std::{thread::{available_parallelism, sleep}, time::Duration};
+use std::thread::{available_parallelism, sleep};
 
 use f256::f256;
 use mandelbrot_lib::{
@@ -7,6 +7,10 @@ use mandelbrot_lib::{
 };
 
 fn main() {
+    let w = Worker::new(4, |x: u64| x * x);
+    w.add_tasks(0..10);
+    drop(w);
+
     let available_threads = available_parallelism().unwrap().get();
     
     let width = 3440;
@@ -20,7 +24,7 @@ fn main() {
     let mut num_tasks = width_in_chunks * height_in_chunks;
     
     let worker = Worker::new(
-        available_threads - 2, 
+        available_threads - 1, 
         calc_chunk_f256
     );
     

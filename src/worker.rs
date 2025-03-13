@@ -53,7 +53,7 @@ where
 
     /// Add multiple tasks to the end of the queue.
     pub fn add_tasks(&self, tasks: impl IntoIterator<Item = T>) {
-        self.task_queue.push_bulk(tasks.into_iter().map(Work::Task));
+        self.task_queue.extend(tasks.into_iter().map(Work::Task));
     }
 
     /// Wait for the next result and return it. Blocks until a result is available.
@@ -122,8 +122,8 @@ where
     fn drop(&mut self) {
         self.clear_queue();
 
-        for _ in 0..self.num_worker_threads {
-            self.task_queue.push(Work::Terminate);
-        }
+        let messages = (0..self.num_worker_threads).map(|_| Work::Terminate);
+
+        self.task_queue.extend(messages);
     }
 }

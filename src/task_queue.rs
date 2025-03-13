@@ -28,7 +28,7 @@ impl<T> TaskQueue<T> {
         self.condvar.notify_one();
     }
 
-    pub fn push_bulk(&self, new_tasks: impl IntoIterator<Item = T>) {
+    pub fn extend(&self, new_tasks: impl IntoIterator<Item = T>) {
         let mut tasks = self.tasks.lock().unwrap();
         tasks.extend(new_tasks);
         self.condvar.notify_all();
