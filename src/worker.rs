@@ -56,12 +56,19 @@ where
         self.task_queue.extend(tasks.into_iter().map(Work::Task));
     }
 
+    /// Return the next result. If no result is available, return None.
+    /// This function will not block.
+    pub fn get_result_option(&self) -> Option<R> {
+        self.result_receiver.try_recv().ok()
+    }
+
     /// Wait for the next result and return it. Blocks until a result is available.
     pub fn wait_for_result(&self) -> R {
         self.result_receiver.recv().unwrap()
     }
 
     /// Receive all available results and return them in a vector. 
+    /// This function will not block.
     pub fn receive_all_results(&self) -> Vec<R> {
         let mut results = Vec::new();
         while let Ok(result) = self.result_receiver.try_recv() {
@@ -72,6 +79,7 @@ where
 
     /// Write available results into the buffer and return the number of results written.
     /// If the buffer is too small to hold all available results, the remaining results will be left in the queue.
+    /// This function will not block.
     pub fn receive_results_in_buffer(&self, buffer: &mut [R]) -> usize {
         let mut indx = 0;
         while indx < buffer.len() {

@@ -41,7 +41,7 @@ fn main() {
                     y,
                     chunk_size,
                     resolution: chunk_resolution,
-                    max_iter: 200,
+                    max_iter: 100,
                 }
             });
         
