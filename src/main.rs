@@ -50,8 +50,6 @@ fn main() {
 
     println!("Dispatching 20 tasks took: {:?}", add_start.elapsed());
 
-    sleep(Duration::from_secs(1));
-
     let mut results = 0;
     while results < num_tasks {
         worker.wait_for_result();
