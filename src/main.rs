@@ -11,7 +11,7 @@ fn main() {
 
     let width = 3440;
     let height = 1440;
-    let chunk_resolution = 64;
+    let chunk_resolution = 32;
 
     let width_in_chunks = width / chunk_resolution + 1;
     let height_in_chunks = height / chunk_resolution + 1;
@@ -43,16 +43,17 @@ fn main() {
     worker.add_tasks(new_tiles.clone());
     sleep(std::time::Duration::from_millis(1));
     let start = std::time::Instant::now();
-    worker.add_tasks(new_tiles);
+    worker.add_tasks(new_tiles.take(20));
 
     println!("Dsipatching tasks took: {:?}", start.elapsed());
 
     sleep(Duration::from_secs(1));
 
     let mut results = 0;
-    while results < num_tasks + 10 {
+    while results < num_tasks + 20 {
         worker.wait_for_result();
         results += 1;
     }
+
     println!("Time taken: {:?}", start.elapsed());
 }
