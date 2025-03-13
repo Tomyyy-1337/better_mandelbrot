@@ -11,7 +11,7 @@ fn main() {
 
     let width = 3440;
     let height = 1440;
-    let chunk_resolution = 32;
+    let chunk_resolution = 64;
 
     let width_in_chunks = width / chunk_resolution + 1;
     let height_in_chunks = height / chunk_resolution + 1;

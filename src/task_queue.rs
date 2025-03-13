@@ -35,11 +35,13 @@ impl<T> TaskQueue<T> {
     }
 
     pub fn wait_for_task(&self) -> T {
-        let mut tasks = self.tasks.lock().unwrap();
-        while tasks.is_empty() {
-            tasks = self.condvar.wait(tasks).unwrap();
+        let mut tasks = self.tasks.lock().unwrap();   
+        loop {
+            match tasks.pop_front() {
+                Some(task) => return task,
+                None => tasks = self.condvar.wait(tasks).unwrap(),
+            }
         }
-        tasks.pop_front().unwrap()
     }
 }
 
