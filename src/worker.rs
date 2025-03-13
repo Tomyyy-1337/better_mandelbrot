@@ -40,7 +40,7 @@ where
             num_worker_threads,
         }
     }
-
+    
     /// Clear the task queue. Task that are currently being processed will not be interrupted.
     pub fn clear_queue(&self) {
         self.task_queue.clear_queue();
@@ -61,7 +61,7 @@ where
         self.result_receiver.recv().unwrap()
     }
 
-    /// Receive all available results and return them in a vector.
+    /// Receive all available results and return them in a vector. 
     pub fn receive_all_results(&self) -> Vec<R> {
         let mut results = Vec::new();
         while let Ok(result) = self.result_receiver.try_recv() {
@@ -86,6 +86,8 @@ where
         indx
     }
 
+    /// Return the number of tasks currently in the queue. This does not include tasks that are currently being processed
+    /// by worker threads.
     pub fn current_queue_size(&self) -> usize {
         self.task_queue.len()
     }
@@ -101,7 +103,9 @@ where
                     Work::Terminate => break,
                     Work::Task(task) => {
                         let result = worker_function(task);
-                        result_sender.send(result).unwrap();
+                        if let Err(_) = result_sender.send(result) {
+                            break;
+                        }
                     }
                 }
             }
