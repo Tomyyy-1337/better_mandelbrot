@@ -44,7 +44,7 @@ fn main() {
     worker.add_tasks(new_tiles.clone());
     sleep(std::time::Duration::from_millis(1));
     num_tasks += 20;
-    println!("Starting 20 tasks took...");
+    println!("Starting 20 tasks...");
     let add_start = std::time::Instant::now();
     worker.add_tasks(new_tiles.take(20));
 
@@ -56,5 +56,5 @@ fn main() {
         results += 1;
     }
 
-    println!("Calculation time taken: {:?}", start.elapsed());
+    println!("Calculation time: {:?}", start.elapsed());
 }
