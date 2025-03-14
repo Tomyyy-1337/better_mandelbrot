@@ -4,14 +4,16 @@ pub struct Complex<T> {
     b: T,
 }
 
+impl<T> Complex<T> {
+    pub fn new(a: T, b: T) -> Complex<T> {
+        Complex { a, b }
+    }
+}
+
 impl<T> Complex<T>
 where
     T: Copy + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
 {
-    pub fn new(x: T, y: T) -> Complex<T> {
-        Complex { a: x, b: y }
-    }
-
     pub fn norm(&self) -> T {
         self.a * self.a + self.b * self.b
     }
