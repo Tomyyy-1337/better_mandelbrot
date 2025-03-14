@@ -1,5 +1,6 @@
 use std::sync::{
-    mpsc::{Receiver, Sender}, Arc,
+    Arc,
+    mpsc::{Receiver, Sender},
 };
 
 use crate::task_queue::TaskQueue;
@@ -40,7 +41,7 @@ where
             num_worker_threads,
         }
     }
-    
+
     /// Clear the task queue. Task that are currently being processed will not be interrupted.
     pub fn clear_queue(&self) {
         self.task_queue.clear_queue();
@@ -67,7 +68,7 @@ where
         self.result_receiver.recv().unwrap()
     }
 
-    /// Receive all available results and return them in a vector. 
+    /// Receive all available results and return them in a vector.
     /// This function will not block.
     pub fn receive_all_results(&self) -> Vec<R> {
         let mut results = Vec::new();

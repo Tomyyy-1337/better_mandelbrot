@@ -1,4 +1,7 @@
-use std::{collections::VecDeque, sync::{Condvar, Mutex}};
+use std::{
+    collections::VecDeque,
+    sync::{Condvar, Mutex},
+};
 
 pub struct TaskQueue<T> {
     tasks: Mutex<VecDeque<T>>,
@@ -35,7 +38,7 @@ impl<T> TaskQueue<T> {
     }
 
     pub fn wait_for_task(&self) -> T {
-        let mut tasks = self.tasks.lock().unwrap();   
+        let mut tasks = self.tasks.lock().unwrap();
         loop {
             match tasks.pop_front() {
                 Some(task) => return task,

@@ -39,8 +39,59 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "250ea0f9a0eb0e71b9040133a84777ddfd97a3c57689c249acb5917e1d869cb8"
 
 [[package]]
+name = "fpdec"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce2c6267fe7a0c52672fe9879c22a4b5a08f11c6c987c43186141d5b0eb9745f"
+dependencies = [
+ "fpdec-core",
+ "fpdec-macros",
+]
+
+[[package]]
+name = "fpdec-core"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64c81a0af753d9c6e1d5f83f956699e66fe578c8002e233c831facaad1becc9f"
+
+[[package]]
+name = "fpdec-macros"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45cd2d5a6b768a966a951d753151922da390c185fcce1ee5f529dab994d8480c"
+dependencies = [
+ "fpdec-core",
+ "quote",
+]
+
+[[package]]
 name = "mandelbrot_lib"
 version = "0.1.0"
 dependencies = [
  "f256",
+ "fpdec",
 ]
+
+[[package]]
+name = "proc-macro2"
+version = "1.0.94"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a31971752e70b8b2686d7e46ec17fb38dad4051d94024c88df49b667caea9c84"
+dependencies = [
+ "unicode-ident",
+]
+
+[[package]]
+name = "quote"
+version = "1.0.40"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1885c039570dc00dcb4ff087a89e185fd56bae234ddc7f056a945bf36467248d"
+dependencies = [
+ "proc-macro2",
+]
+
+[[package]]
+name = "unicode-ident"
+version = "1.0.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a5f39404a5da50712a4c1eecf25e90dd62b613502b7e925fd4e4d19b5c96512"

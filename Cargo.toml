@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 f256 = "0.6.0"
+fpdec = "0.11.0"

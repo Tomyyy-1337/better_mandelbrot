@@ -1,30 +1,43 @@
-use f256::f256;
-
-pub struct ComplexF256 {
-    a: f256,
-    b: f256,
+#[derive(Debug, Clone, Copy)]
+pub struct Complex<T> {
+    a: T,
+    b: T,
 }
 
-impl ComplexF256 {
-    pub fn new(x: f256, y: f256) -> ComplexF256 {
-        ComplexF256 { a: x, b: y }
+impl<T> Complex<T>
+where
+    T: Copy + std::ops::Add<Output = T> + std::ops::Mul<Output = T>,
+{
+    pub fn new(x: T, y: T) -> Complex<T> {
+        Complex { a: x, b: y }
     }
 
-    pub fn square(&mut self) {
-        let a_squared = self.a * self.a;
-        let b_squared = self.b * self.b;
-        let a_b = self.a * self.b;
-
-        self.a = a_squared - b_squared;
-        self.b = a_b + a_b;
-    }
-
-    pub fn norm(&self) -> f256 {
+    pub fn norm(&self) -> T {
         self.a * self.a + self.b * self.b
     }
+}
 
-    pub fn add(&mut self, other: &ComplexF256) {
-        self.a += &other.a;
-        self.b += &other.b;
+impl<T> std::ops::AddAssign for Complex<T>
+where
+    T: std::ops::AddAssign,
+{
+    fn add_assign(&mut self, other: Complex<T>) {
+        self.a += other.a;
+        self.b += other.b;
+    }
+}
+
+impl<T> std::ops::MulAssign for Complex<T>
+where
+    T: Copy 
+        + std::ops::Add<Output = T> 
+        + std::ops::Mul<Output = T> 
+        + std::ops::Sub<Output = T>,
+{
+    fn mul_assign(&mut self, other: Complex<T>) {
+        let a = self.a;
+        let b = self.b;
+        self.a = a * other.a - b * other.b;
+        self.b = a * other.b + b * other.a;
     }
 }
