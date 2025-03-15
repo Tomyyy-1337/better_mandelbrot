@@ -38,8 +38,7 @@ where
 {
     fn mul_assign(&mut self, other: Complex<T>) {
         let a = self.a;
-        let b = self.b;
-        self.a = a * other.a - b * other.b;
-        self.b = a * other.b + b * other.a;
+        self.a = a * other.a - self.b * other.b;
+        self.b = a * other.b + self.b * other.a;
     }
 }

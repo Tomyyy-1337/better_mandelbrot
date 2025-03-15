@@ -1,37 +1,37 @@
 use std::{
     collections::VecDeque,
-    sync::{Condvar, Mutex},
+    sync::{Arc, Condvar, Mutex},
 };
 
-pub struct TaskQueue<T> {
+struct InnerTaskQueue<T> {
     tasks: Mutex<VecDeque<T>>,
     condvar: Condvar,
 }
 
-impl<T> TaskQueue<T> {
-    pub fn len(&self) -> usize {
+impl<T> InnerTaskQueue<T> {
+    fn len(&self) -> usize {
         self.tasks.lock().unwrap().len()
     }
 
-    pub fn clear_queue(&self) -> usize {
+    fn clear_queue(&self) -> usize {
         let mut tasks = self.tasks.lock().unwrap();
         tasks.drain(..).len()
     }
 
-    pub fn new() -> TaskQueue<T> {
-        TaskQueue {
+    fn new() -> InnerTaskQueue<T> {
+        InnerTaskQueue {
             tasks: Mutex::new(VecDeque::new()),
             condvar: Condvar::new(),
         }
     }
 
-    pub fn push(&self, task: T) {
+    fn push(&self, task: T) {
         let mut tasks = self.tasks.lock().unwrap();
         tasks.push_back(task);
         self.condvar.notify_one();
     }
 
-    pub fn extend(&self, new_tasks: impl IntoIterator<Item = T>) -> usize {
+    fn extend(&self, new_tasks: impl IntoIterator<Item = T>) -> usize {
         let num_new = {
             let mut tasks = self.tasks.lock().unwrap();
             let len = tasks.len();
@@ -46,7 +46,7 @@ impl<T> TaskQueue<T> {
         num_new
     }
 
-    pub fn wait_for_task(&self) -> T {
+    fn wait_for_task(&self) -> T {
         let mut tasks = self.tasks.lock().unwrap();
         loop {
             match tasks.pop_front() {
@@ -57,15 +57,55 @@ impl<T> TaskQueue<T> {
     }
 }
 
+pub struct TaskQueue<T> {
+    inner: Arc<InnerTaskQueue<T>>,
+}
+
+impl<T> TaskQueue<T> {
+    pub fn new() -> TaskQueue<T> {
+        TaskQueue {
+            inner: Arc::new(InnerTaskQueue::new()),
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    pub fn clear_queue(&self) -> usize {
+        self.inner.clear_queue()
+    }
+
+    pub fn push(&self, task: T) {
+        self.inner.push(task);
+    }
+
+    pub fn extend(&self, new_tasks: impl IntoIterator<Item = T>) -> usize {
+        self.inner.extend(new_tasks)
+    }
+
+    pub fn wait_for_task(&self) -> T {
+        self.inner.wait_for_task()
+    }
+}
+
+impl<T> Clone for TaskQueue<T> {
+    fn clone(&self) -> TaskQueue<T> {
+        TaskQueue {
+            inner: self.inner.clone(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use std::{sync::Arc, thread::sleep, time::Duration};
+    use std::{thread::sleep, time::Duration};
 
     use super::*;
 
     #[test]
     fn test_task_queue() {
-        let task_queue = Arc::new(TaskQueue::new());
+        let task_queue = TaskQueue::new();
         assert_eq!(task_queue.len(), 0);
         task_queue.push(1);
         assert_eq!(task_queue.len(), 1);

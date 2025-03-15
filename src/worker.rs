@@ -1,7 +1,4 @@
-use std::sync::{
-    Arc,
-    mpsc::{Receiver, Sender},
-};
+use std::sync::mpsc::{Receiver, Sender};
 
 use crate::task_queue::TaskQueue;
 
@@ -15,7 +12,7 @@ where
     T: Send + 'static,
     R: Send + 'static,
 {
-    task_queue: Arc<TaskQueue<Work<T>>>,
+    task_queue: TaskQueue<Work<T>>,
     result_receiver: Receiver<R>,
     num_worker_threads: usize,
     num_pending_tasks: usize,
@@ -30,7 +27,7 @@ where
     /// Spawns worker threads that will process tasks from the queue using the worker function.
     pub fn new(num_worker_threads: usize, worker_function: fn(T) -> R) -> Worker<T, R> {
         let (result_sender, result_receiver) = std::sync::mpsc::channel();
-        let task_queue = Arc::new(TaskQueue::new());
+        let task_queue = TaskQueue::new();
 
         for _ in 0..num_worker_threads.max(1) {
             Self::spawn_worker_thread(worker_function, result_sender.clone(), task_queue.clone());
@@ -133,7 +130,7 @@ where
     fn spawn_worker_thread(
         worker_function: fn(T) -> R,
         result_sender: Sender<R>,
-        task_queue: Arc<TaskQueue<Work<T>>>,
+        task_queue: TaskQueue<Work<T>>,
     ) -> std::thread::JoinHandle<()> {
         std::thread::spawn(move || {
             loop {

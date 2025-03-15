@@ -20,7 +20,7 @@ where
         + From<u32>,
 {
     pub fn calc_chunk(task: Task<T>) -> Vec<u32> {
-        let mut results = Vec::new();
+        let mut results = Vec::with_capacity((task.resolution * task.resolution) as usize);
         let step_size = task.chunk_size / T::from(task.resolution);
         for i in 0..task.resolution {
             for j in 0..task.resolution {
