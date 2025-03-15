@@ -20,9 +20,9 @@ fn main() {
     let height_in_chunks = height / chunk_resolution + 1;
     let chunk_size = Nums::from(4) / Nums::from(width_in_chunks);
 
-    let mut num_tasks = width_in_chunks * height_in_chunks;
+    let num_tasks = width_in_chunks * height_in_chunks;
 
-    let worker = Worker::new(available_threads - 1, Task::calc_chunk);
+    let mut worker = Worker::new(available_threads - 1, Task::calc_chunk);
 
     println!("Starting {} tasks...", num_tasks);
     let start = std::time::Instant::now();
@@ -37,24 +37,19 @@ fn main() {
                 y,
                 chunk_size,
                 resolution: chunk_resolution,
-                max_iter: 1000,
+                max_iter: 10000,
             }
         });
 
     worker.add_tasks(new_tiles.clone());
     sleep(std::time::Duration::from_millis(1));
-    num_tasks += 20;
     println!("Starting 20 tasks...");
     let add_start = std::time::Instant::now();
     worker.add_tasks(new_tiles.take(20));
 
     println!("Dispatching 20 tasks took: {:?}", add_start.elapsed());
 
-    let mut results = 0;
-    while results < num_tasks {
-        worker.wait_for_result();
-        results += 1;
-    }
-
+    let tasks_num = worker.wait_for_all_results().len();
+    println!("{} Results received", tasks_num);
     println!("Calculation time: {:?}", start.elapsed());
 }

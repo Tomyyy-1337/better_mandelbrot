@@ -18,6 +18,7 @@ where
     task_queue: Arc<TaskQueue<Work<T>>>,
     result_receiver: Receiver<R>,
     num_worker_threads: usize,
+    num_pending_tasks: usize,
 }
 
 impl<T, R> Worker<T, R>
@@ -39,49 +40,70 @@ where
             task_queue,
             result_receiver,
             num_worker_threads,
+            num_pending_tasks: 0,
         }
     }
 
     /// Clear the task queue. Task that are currently being processed will not be interrupted.
-    pub fn clear_queue(&self) {
-        self.task_queue.clear_queue();
+    pub fn clear_queue(&mut self) {
+        self.num_pending_tasks -= self.task_queue.clear_queue();
     }
 
     /// Add a task to the end of the queue.
-    pub fn add_task(&self, task: T) {
+    pub fn add_task(&mut self, task: T) {
+        self.num_pending_tasks += 1;
         self.task_queue.push(Work::Task(task));
     }
 
     /// Add multiple tasks to the end of the queue.
-    pub fn add_tasks(&self, tasks: impl IntoIterator<Item = T>) {
-        self.task_queue.extend(tasks.into_iter().map(Work::Task));
+    pub fn add_tasks(&mut self, tasks: impl IntoIterator<Item = T>) {
+        let num = self.task_queue.extend(tasks.into_iter().map(Work::Task));
+        self.num_pending_tasks += num;
     }
 
     /// Return the next result. If no result is available, return None.
     /// This function will not block.
-    pub fn get_result_option(&self) -> Option<R> {
-        self.result_receiver.try_recv().ok()
+    pub fn get_result_option(&mut self) -> Option<R> {
+        match self.result_receiver.try_recv() {
+            Ok(result) => {
+                self.num_pending_tasks -= 1;
+                Some(result)
+            }
+            Err(_) => None,
+        }
     }
 
     /// Wait for the next result and return it. Blocks until a result is available.
-    pub fn wait_for_result(&self) -> R {
+    pub fn wait_for_result(&mut self) -> R {
+        self.num_pending_tasks -= 1;
         self.result_receiver.recv().unwrap()
+    }
+
+    /// Block until all tasks have been processed and return all results in a vector.
+    pub fn wait_for_all_results(&mut self) -> Vec<R> {
+        let mut results = Vec::with_capacity(self.num_pending_tasks);
+        while self.num_pending_tasks > 0 {
+            let result = self.wait_for_result();
+            results.push(result);
+        }
+        results
     }
 
     /// Receive all available results and return them in a vector.
     /// This function will not block.
-    pub fn receive_all_results(&self) -> Vec<R> {
+    pub fn receive_all_results(&mut self) -> Vec<R> {
         let mut results = Vec::new();
         while let Ok(result) = self.result_receiver.try_recv() {
             results.push(result);
         }
+        self.num_pending_tasks -= results.len();
         results
     }
 
     /// Write available results into the buffer and return the number of results written.
     /// If the buffer is too small to hold all available results, the remaining results will be left in the queue.
     /// This function will not block.
-    pub fn receive_results_in_buffer(&self, buffer: &mut [R]) -> usize {
+    pub fn receive_results_in_buffer(&mut self, buffer: &mut [R]) -> usize {
         let mut indx = 0;
         while indx < buffer.len() {
             match self.result_receiver.try_recv() {
@@ -92,6 +114,7 @@ where
                 Err(_) => break,
             }
         }
+        self.num_pending_tasks -= indx;
         indx
     }
 
@@ -99,6 +122,12 @@ where
     /// by worker threads.
     pub fn current_queue_size(&self) -> usize {
         self.task_queue.len()
+    }
+
+    /// Return the number of pebding tasks. This includes tasks that are currently being processed
+    /// by worker threads and tasks that are in the queue.
+    pub fn num_pending_tasks(&self) -> usize {
+        self.num_pending_tasks
     }
 
     fn spawn_worker_thread(
