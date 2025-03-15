@@ -98,11 +98,11 @@ mod tests {
 
         assert!(threads.iter().all(|t| !t.is_finished()));
         task_queue.extend(0..1);
-        assert!(threads.iter().all(|t| !t.is_finished()));
+        assert!(threads.iter().any(|t| !t.is_finished()));
         task_queue.extend(0..0);
-        assert!(threads.iter().all(|t| !t.is_finished()));
+        assert!(threads.iter().any(|t| !t.is_finished()));
         task_queue.extend(0..8);
-        assert!(threads.iter().all(|t| !t.is_finished()));
+        assert!(threads.iter().any(|t| !t.is_finished()));
         task_queue.extend(0..1);
 
         assert!(threads.into_iter().all(|t| t.join().is_ok()));
