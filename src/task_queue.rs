@@ -86,5 +86,25 @@ mod tests {
 
         task_queue.push(1);
         assert!(t.join().is_ok());
+
+        let threads = (0..10)
+            .map(|_| {
+                let task_queue_clone = task_queue.clone();
+                std::thread::spawn(move || {
+                    task_queue_clone.wait_for_task();
+                })
+            })
+            .collect::<Vec<_>>();
+
+        assert!(threads.iter().all(|t| !t.is_finished()));
+        task_queue.extend(0..1);
+        assert!(threads.iter().all(|t| !t.is_finished()));
+        task_queue.extend(0..0);
+        assert!(threads.iter().all(|t| !t.is_finished()));
+        task_queue.extend(0..8);
+        assert!(threads.iter().all(|t| !t.is_finished()));
+        task_queue.extend(0..1);
+
+        assert!(threads.into_iter().all(|t| t.join().is_ok()));
     }
 }
