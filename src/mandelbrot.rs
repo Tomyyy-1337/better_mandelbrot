@@ -4,8 +4,8 @@ pub struct Task<T> {
     pub x: T,
     pub y: T,
     pub chunk_size: T,
-    pub resolution: u16,
-    pub max_iter: u16,
+    pub resolution: u32,
+    pub max_iter: u32,
 }
 
 impl<T> Task<T>
@@ -17,9 +17,9 @@ where
         + std::ops::Div<Output = T>
         + std::ops::AddAssign
         + PartialOrd
-        + From<u16>,
+        + From<u32>,
 {
-    pub fn calc_chunk(task: Task<T>) -> Vec<u16> {
+    pub fn calc_chunk(task: Task<T>) -> Vec<u32> {
         let mut results = Vec::new();
         let step_size = task.chunk_size / T::from(task.resolution);
         for i in 0..task.resolution {
@@ -32,7 +32,7 @@ where
         results
     }
 
-    fn calc_mandelbrot(a: T, b: T, max_iter: u16) -> u16 {
+    fn calc_mandelbrot(a: T, b: T, max_iter: u32) -> u32 {
         let mut z = Complex::new(T::from(0), T::from(0));
         let c = Complex::new(a, b);
         let mut iter = 0;

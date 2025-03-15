@@ -13,9 +13,6 @@ impl<T> TaskQueue<T> {
         self.tasks.lock().unwrap().len()
     }
 
-    /// Clear the task queue.
-    /// ## Returns
-    /// The number of tasks that were in the queue before clearing.
     pub fn clear_queue(&self) -> usize {
         let mut tasks = self.tasks.lock().unwrap();
         tasks.drain(..).len()
@@ -28,16 +25,12 @@ impl<T> TaskQueue<T> {
         }
     }
 
-    /// Push a task to the end of the queue and notify a waiting thread.
     pub fn push(&self, task: T) {
         let mut tasks = self.tasks.lock().unwrap();
         tasks.push_back(task);
         self.condvar.notify_one();
     }
 
-    /// Extend the queue with new tasks and notify all waiting threads.
-    /// ## Returns
-    /// The number of tasks that were added to the queue.
     pub fn extend(&self, new_tasks: impl IntoIterator<Item = T>) -> usize {
         let num_new = {
             let mut tasks = self.tasks.lock().unwrap();
@@ -53,7 +46,6 @@ impl<T> TaskQueue<T> {
         num_new
     }
 
-    /// Wait for a task to be available and return it.
     pub fn wait_for_task(&self) -> T {
         let mut tasks = self.tasks.lock().unwrap();
         loop {

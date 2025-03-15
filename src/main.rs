@@ -22,7 +22,10 @@ fn main() {
 
     let num_tasks = width_in_chunks * height_in_chunks;
 
-    let mut worker = Worker::new(available_threads - 1, Task::calc_chunk);
+    let mut worker = Worker::new(
+        available_threads - 1, 
+        Task::calc_chunk
+    );
 
     println!("Starting {} tasks...", num_tasks);
     let start = std::time::Instant::now();
@@ -37,7 +40,7 @@ fn main() {
                 y,
                 chunk_size,
                 resolution: chunk_resolution,
-                max_iter: 10000,
+                max_iter: 1000,
             }
         });
 
