@@ -1,15 +1,33 @@
 use std::thread::{available_parallelism, sleep};
 
-use f256::f256;
-use fpdec::Decimal;
-
 use mandelbrot_lib::{Task, Worker};
 
-type Nums = f64;
-// type Nums = Decimal;
-// type Nums = f256;
-
 fn main() {
+    #[cfg(any(not(any(feature = "quad", feature = "octo")), feature = "full"))]
+    bench::<f64>();
+    
+    #[cfg(feature = "quad")]
+    bench::<fpdec::Decimal>();    
+    
+    #[cfg(feature = "octo")]
+    bench::<f256::f256>();
+}
+
+fn bench<Num>() 
+where 
+    Num: Send + 'static
+        + Copy
+        + std::ops::Mul<Output = Num>
+        + std::ops::Add<Output = Num>
+        + std::ops::Sub<Output = Num>
+        + std::ops::Div<Output = Num>
+        + std::ops::AddAssign
+        + PartialOrd
+        + From<u32>
+        + From<i32>
+{
+    println!("\nBenchmarking with Type: {}", std::any::type_name::<Num>());
+
     let available_threads = available_parallelism().unwrap().get();
 
     let width = 3440;
@@ -18,7 +36,7 @@ fn main() {
 
     let width_in_chunks = width / chunk_resolution + 1;
     let height_in_chunks = height / chunk_resolution + 1;
-    let chunk_size = Nums::from(4) / Nums::from(width_in_chunks);
+    let chunk_size = Num::from(4) / Num::from(width_in_chunks);
 
     let num_tasks = width_in_chunks * height_in_chunks;
 
@@ -33,14 +51,14 @@ fn main() {
     let new_tiles = (0..width_in_chunks)
         .flat_map(|x| (0..height_in_chunks).map(move |y| (x, y)))
         .map(|(x, y)| {
-            let x = Nums::from(-2) + Nums::from(x) * Nums::from(chunk_size);
-            let y = Nums::from(-2) + Nums::from(y) * Nums::from(chunk_size);
+            let x = Num::from(-2) + Num::from(x) * Num::from(chunk_size);
+            let y = Num::from(-2) + Num::from(y) * Num::from(chunk_size);
             Task {
                 x,
                 y,
                 chunk_size,
                 resolution: chunk_resolution,
-                max_iter: 1000,
+                max_iter: 200,
             }
         });
 
