@@ -6,8 +6,14 @@ fn main() {
     #[cfg(any(not(any(feature = "quad", feature = "octo")), feature = "full"))]
     bench::<f64>();
     
+    #[cfg(feature = "full")]
+    println!("======================================");
+    
     #[cfg(feature = "quad")]
-    bench::<fpdec::Decimal>();    
+    bench::<fpdec::Decimal>();
+
+    #[cfg(feature = "full")]
+    println!("======================================");
     
     #[cfg(feature = "octo")]
     bench::<f256::f256>();
@@ -26,7 +32,7 @@ where
         + From<u32>
         + From<i32>
 {
-    println!("\nBenchmarking with Type: {}", std::any::type_name::<Num>());
+    println!("Benchmarking with Type: {}", std::any::type_name::<Num>());
 
     let available_threads = available_parallelism().unwrap().get();
 
