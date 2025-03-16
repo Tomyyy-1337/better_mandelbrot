@@ -1,4 +1,3 @@
-use mandelbrot_proc_macros::worker_function;
 use crate::{complex::Complex, check_if_cancelled, State};
 
 pub struct Task<T> {
@@ -20,8 +19,7 @@ where
         + PartialOrd
         + From<u32>,
 {
-    #[worker_function]
-    pub fn calc_chunk(task: Task<T>) -> Vec<u32> {
+    pub fn calc_chunk(task: Task<T> , state: &State) -> Option<Vec<u32>> {
         let mut results = Vec::with_capacity((task.resolution * task.resolution) as usize);
         let step_size = task.chunk_size / T::from(task.resolution);
         for i in 0..task.resolution {
@@ -32,7 +30,7 @@ where
                 results.push(Self::calc_mandelbrot(a, b, task.max_iter));
             }
         }
-        results
+        Some(results)
     }
 
     fn calc_mandelbrot(a: T, b: T, max_iter: u32) -> u32 {

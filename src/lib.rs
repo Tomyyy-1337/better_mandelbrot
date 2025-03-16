@@ -10,5 +10,3 @@ pub use crate::worker_state::State;
 
 mod worker;
 pub use crate::worker::Worker;
-
-pub use mandelbrot_proc_macros::worker_function;

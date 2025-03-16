@@ -1,7 +1,6 @@
 use std::thread::sleep;
 
 use mandelbrot_lib::{check_if_cancelled, State, Worker};
-use mandelbrot_proc_macros::worker_function;
 use multi_compare::c;
 
 fn main() {
@@ -24,8 +23,7 @@ fn main() {
     worker.wait_for_all_results();
 }
 
-#[worker_function]
-fn task(n: u64) -> u64 {
+fn task(n: u64, state: &State) -> Option<u64> {
     println!("Task: {}", n);
     let mut sum = 0;
     for i in 0..n {
@@ -41,5 +39,5 @@ fn task(n: u64) -> u64 {
         }
     }
     println!("Task: {} done", n);
-    sum
+    Some(sum)
 }
