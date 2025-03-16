@@ -95,7 +95,7 @@ where
         }
     }
 
-    /// Clear the task queue. Task that are currently being processed will not be interrupted.
+    /// Clear the task queue and cancel all tasks as soon as possible.
     pub fn clear_queue(&mut self) {
         self.task_queue.clear_queue();
         for state in &self.worker_state {
