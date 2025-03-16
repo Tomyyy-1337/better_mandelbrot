@@ -1,17 +1,13 @@
 ## Run benchmark
-* Run double precision only
+* Benchmark f64
     ```sh
-    cargo run --example bench --release
+    cargo bench repaint
     ```
-* Run quadruple precision only
+* Benchmark fpdec::Decimal
     ```sh
-    cargo run --example bench --release -F quad
+    cargo bench repaint -F quad
     ```
-* Run octuple precision only
+* Benchmark f256
     ```sh
-    cargo run --example bench --release -F octo
-    ```
-* Run all tests
-    ```sh
-    cargo run --example bench --release -F full
+    cargo bench repaint -F octo
     ```
