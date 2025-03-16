@@ -2,7 +2,7 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Expr, FnArg, ItemFn, Macro, ReturnType, Stmt, Token, Type};
+use syn::{parse_macro_input, Expr, FnArg, ItemFn, ReturnType, Stmt, Token, Type};
 use syn::spanned::Spanned;
 
 #[proc_macro_attribute]
@@ -20,18 +20,6 @@ pub fn worker_function(_attr: TokenStream, item: TokenStream) -> TokenStream {
             Option<#original_type>
         };
         *ty = Box::new(wrapped_type);
-    }
-    
-    // Makro `check_cancel!();` durch `check_cancel!(state);` ersetzen
-    for stmt in &mut input_fn.block.stmts {
-        if let Stmt::Macro(mac_stmt) = stmt {
-            let Macro { path, tokens, .. } = &mac_stmt.mac;
-            if path.is_ident("check") && tokens.is_empty() {
-                *stmt = syn::parse_quote! {
-                    check_cancel!(state);
-                };
-            }
-        }
     }
     
     if let Some(last_stmt) = input_fn.block.stmts.last_mut() {
