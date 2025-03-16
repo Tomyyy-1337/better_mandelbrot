@@ -1,59 +1,10 @@
-use std::sync::{mpsc::{Receiver, Sender}, Arc, Mutex};
+use std::sync::mpsc::{Receiver, Sender};
 
-use crate::task_queue::TaskQueue;
+use crate::{task_queue::TaskQueue, State};
 
 enum Work<T> {
     Task(T),
     Terminate,
-}
-
-enum WorkerState {
-    Running,
-    Canceled,
-    Waiting,
-}
-
-pub struct State {
-    state: Arc<Mutex<WorkerState>>,
-}
-
-impl State {
-    fn new() -> State {
-        State {
-            state: Arc::new(Mutex::new(WorkerState::Waiting)),
-        }
-    }
-
-    fn set_waiting(&self) {
-        *self.state.lock().unwrap() = WorkerState::Waiting;
-    }
-
-    fn set_running(&self) {
-        *self.state.lock().unwrap() = WorkerState::Running;
-    }
-
-    fn cancel(&self) {
-        let mut state = self.state.lock().unwrap();
-        match *state {
-            WorkerState::Running => *state = WorkerState::Canceled,
-            _ => (),
-        }
-    }
-
-    pub fn is_cancelled(&self) -> bool {
-        match *self.state.lock().unwrap() {
-            WorkerState::Canceled => true,
-            _ => false,
-        }
-    }
-}
-
-impl Clone for State {
-    fn clone(&self) -> State {
-        State {
-            state: self.state.clone(),
-        }
-    }
 }
 
 pub struct Worker<T, R>
@@ -62,7 +13,7 @@ where
     R: Send + 'static,
 {
     task_queue: TaskQueue<Work<T>>,
-    result_receiver: Receiver<R>,
+    result_receiver: Receiver<Option<R>>,
     num_worker_threads: usize,
     num_pending_tasks: usize,
     worker_state: Vec<State>,
@@ -119,19 +70,31 @@ where
     /// Return the next result. If no result is available, return None.
     /// This function will not block.
     pub fn get_result_option(&mut self) -> Option<R> {
-        match self.result_receiver.try_recv() {
-            Ok(result) => {
-                self.num_pending_tasks -= 1;
-                Some(result)
+        loop {
+            match self.result_receiver.try_recv() {
+                Ok(result) => {
+                    self.num_pending_tasks -= 1;
+                    match result {
+                        Some(result) => return Some(result),
+                        None => (),
+                    }    
+                }
+                Err(_) => return None,
             }
-            Err(_) => None,
         }
     }
 
     /// Wait for the next result and return it. Blocks until a result is available.
     pub fn wait_for_result(&mut self) -> R {
-        self.num_pending_tasks = self.num_pending_tasks.saturating_sub(1);
-        self.result_receiver.recv().unwrap()
+        loop {
+            self.num_pending_tasks = self.num_pending_tasks.saturating_sub(1);
+            match self.result_receiver.recv().unwrap() {
+                Some(result) => {
+                    return result;
+                },
+                None => (),
+            }
+        }
     }
 
     /// Block until all tasks have been processed and return all results in a vector.
@@ -149,7 +112,10 @@ where
     pub fn receive_all_results(&mut self) -> Vec<R> {
         let mut results = Vec::new();
         while let Ok(result) = self.result_receiver.try_recv() {
-            results.push(result);
+            match result {
+                Some(result) => results.push(result),
+                None => (),
+            }
         }
         self.num_pending_tasks -= results.len();
         results
@@ -162,10 +128,11 @@ where
         let mut indx = 0;
         while indx < buffer.len() {
             match self.result_receiver.try_recv() {
-                Ok(result) => {
+                Ok(Some(result)) => {
                     buffer[indx] = result;
                     indx += 1;
                 }
+                Ok(None) => (),
                 Err(_) => break,
             }
         }
@@ -187,7 +154,7 @@ where
 
     fn spawn_worker_thread(
         worker_function: fn(T, &State) -> Option<R>,
-        result_sender: Sender<R>,
+        result_sender: Sender<Option<R>>,
         task_queue: TaskQueue<Work<T>>,
         state: State,
     ) -> std::thread::JoinHandle<()> {
@@ -198,13 +165,11 @@ where
                     Work::Terminate => break,
                     Work::Task(task) => {
                         state.set_running();
-                        match worker_function(task, &state) {
-                            Some(result) if !state.is_cancelled() => {
-                                if let Err(_) = result_sender.send(result) {
-                                    break;
-                                }
+                        let result =  worker_function(task, &state);
+                        if !state.is_cancelled() {
+                            if let Err(_) = result_sender.send(result) {
+                                break;
                             }
-                            _ => (),
                         }
                     }
                 }

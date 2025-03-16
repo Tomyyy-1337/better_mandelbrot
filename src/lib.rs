@@ -5,5 +5,10 @@ mod task_queue;
 mod mandelbrot;
 pub use crate::mandelbrot::Task;
 
+mod worker_state;
+pub use crate::worker_state::State;
+
 mod worker;
-pub use crate::worker::{Worker, State};
+pub use crate::worker::Worker;
+
+pub use mandelbrot_proc_macros::worker_function;

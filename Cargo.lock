@@ -305,7 +305,16 @@ dependencies = [
  "criterion",
  "f256",
  "fpdec",
+ "mandelbrot_proc_macros",
  "multi_compare",
+]
+
+[[package]]
+name = "mandelbrot_proc_macros"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]

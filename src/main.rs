@@ -1,6 +1,7 @@
 use std::thread::sleep;
 
-use mandelbrot_lib::{State, Worker};
+use mandelbrot_lib::{check_if_cancelled, State, Worker};
+use mandelbrot_proc_macros::worker_function;
 use multi_compare::c;
 
 fn main() {
@@ -17,17 +18,18 @@ fn main() {
     worker.wait_for_all_results();
     
     worker.add_tasks([10000; 4]);   
+    sleep(std::time::Duration::from_secs(1));
+
+    worker.clear_queue();
     worker.wait_for_all_results();
 }
 
-fn task(n: u64, state: &State) -> Option<u64> {
+#[worker_function]
+fn task(n: u64) -> u64 {
     println!("Task: {}", n);
     let mut sum = 0;
     for i in 0..n {
-        if state.is_cancelled() {
-            println!("Task: {} cancelled", n);
-            return None;
-        }
+        check_if_cancelled!(state);
         for j in 0..n {
             for k in 0..n {
                 if c!(i < j < k) {
@@ -39,5 +41,5 @@ fn task(n: u64, state: &State) -> Option<u64> {
         }
     }
     println!("Task: {} done", n);
-    Some(sum)
+    sum
 }

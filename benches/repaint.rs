@@ -20,7 +20,6 @@ fn criterion_benchmark(c: &mut Criterion) {
         Task::calc_chunk
     );
 
-
     let type_name = std::any::type_name::<Num>();
     
     c.bench_function(format!("{type_name} Repaint"), |b| b.iter(|| repaint::<Num>(&mut worker)));
