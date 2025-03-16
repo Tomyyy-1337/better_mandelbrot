@@ -6,4 +6,4 @@ mod mandelbrot;
 pub use crate::mandelbrot::Task;
 
 mod worker;
-pub use crate::worker::Worker;
+pub use crate::worker::{Worker, State};

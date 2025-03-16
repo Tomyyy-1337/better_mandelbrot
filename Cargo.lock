@@ -305,6 +305,7 @@ dependencies = [
  "criterion",
  "f256",
  "fpdec",
+ "multi_compare",
 ]
 
 [[package]]
@@ -312,6 +313,12 @@ name = "memchr"
 version = "2.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
+
+[[package]]
+name = "multi_compare"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b2677e88f6523473f1514ff7622f7250c3798fe3f84c5d7390157a05d715a4aa"
 
 [[package]]
 name = "num-traits"

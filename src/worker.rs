@@ -1,10 +1,59 @@
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::{mpsc::{Receiver, Sender}, Arc, Mutex};
 
 use crate::task_queue::TaskQueue;
 
 enum Work<T> {
     Task(T),
     Terminate,
+}
+
+enum WorkerState {
+    Running,
+    Canceled,
+    Waiting,
+}
+
+pub struct State {
+    state: Arc<Mutex<WorkerState>>,
+}
+
+impl State {
+    fn new() -> State {
+        State {
+            state: Arc::new(Mutex::new(WorkerState::Waiting)),
+        }
+    }
+
+    fn set_waiting(&self) {
+        *self.state.lock().unwrap() = WorkerState::Waiting;
+    }
+
+    fn set_running(&self) {
+        *self.state.lock().unwrap() = WorkerState::Running;
+    }
+
+    fn cancel(&self) {
+        let mut state = self.state.lock().unwrap();
+        match *state {
+            WorkerState::Running => *state = WorkerState::Canceled,
+            _ => (),
+        }
+    }
+
+    pub fn is_cancelled(&self) -> bool {
+        match *self.state.lock().unwrap() {
+            WorkerState::Canceled => true,
+            _ => false,
+        }
+    }
+}
+
+impl Clone for State {
+    fn clone(&self) -> State {
+        State {
+            state: self.state.clone(),
+        }
+    }
 }
 
 pub struct Worker<T, R>
@@ -16,6 +65,7 @@ where
     result_receiver: Receiver<R>,
     num_worker_threads: usize,
     num_pending_tasks: usize,
+    worker_state: Vec<State>,
 }
 
 impl<T, R> Worker<T, R>
@@ -25,12 +75,15 @@ where
 {
     /// Create a new worker with a given number of worker threads and a worker function.
     /// Spawns worker threads that will process tasks from the queue using the worker function.
-    pub fn new(num_worker_threads: usize, worker_function: fn(T) -> R) -> Worker<T, R> {
+    pub fn new(num_worker_threads: usize, worker_function: fn(T, &State) -> Option<R>) -> Worker<T, R> {
         let (result_sender, result_receiver) = std::sync::mpsc::channel();
         let task_queue = TaskQueue::new();
-
+        
+        let mut worker_state = Vec::new();
         for _ in 0..num_worker_threads.max(1) {
-            Self::spawn_worker_thread(worker_function, result_sender.clone(), task_queue.clone());
+            let state = State::new();
+            worker_state.push(state.clone());
+            Self::spawn_worker_thread(worker_function, result_sender.clone(), task_queue.clone(), state);
         }
 
         Worker {
@@ -38,12 +91,17 @@ where
             result_receiver,
             num_worker_threads,
             num_pending_tasks: 0,
+            worker_state,
         }
     }
 
     /// Clear the task queue. Task that are currently being processed will not be interrupted.
     pub fn clear_queue(&mut self) {
-        self.num_pending_tasks -= self.task_queue.clear_queue();
+        self.task_queue.clear_queue();
+        for state in &self.worker_state {
+            state.cancel();
+        }
+        self.num_pending_tasks = 0;
     }
 
     /// Add a task to the end of the queue.
@@ -72,7 +130,7 @@ where
 
     /// Wait for the next result and return it. Blocks until a result is available.
     pub fn wait_for_result(&mut self) -> R {
-        self.num_pending_tasks -= 1;
+        self.num_pending_tasks = self.num_pending_tasks.saturating_sub(1);
         self.result_receiver.recv().unwrap()
     }
 
@@ -128,18 +186,25 @@ where
     }
 
     fn spawn_worker_thread(
-        worker_function: fn(T) -> R,
+        worker_function: fn(T, &State) -> Option<R>,
         result_sender: Sender<R>,
         task_queue: TaskQueue<Work<T>>,
+        state: State,
     ) -> std::thread::JoinHandle<()> {
         std::thread::spawn(move || {
             loop {
+                state.set_waiting();
                 match task_queue.wait_for_task() {
                     Work::Terminate => break,
                     Work::Task(task) => {
-                        let result = worker_function(task);
-                        if let Err(_) = result_sender.send(result) {
-                            break;
+                        state.set_running();
+                        match worker_function(task, &state) {
+                            Some(result) if !state.is_cancelled() => {
+                                if let Err(_) = result_sender.send(result) {
+                                    break;
+                                }
+                            }
+                            _ => (),
                         }
                     }
                 }
